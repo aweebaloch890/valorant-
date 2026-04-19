@@ -1,50 +1,74 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Admin Panel - Valorant HUD</title>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <title>VALO ADMIN</title>
     <style>
-        body { background: #111; color: white; padding: 20px; text-align: center; font-family: sans-serif; }
-        .control-box { background: #222; padding: 20px; margin: 10px auto; max-width: 400px; border-radius: 10px; }
-        button { background: #ff4655; border: none; padding: 10px 20px; color: white; font-weight: bold; cursor: pointer; margin: 5px; }
-        input { padding: 8px; margin-bottom: 10px; width: 80%; }
+        body { background: #0f1923; color: white; font-family: sans-serif; text-align: center; padding: 20px; }
+        .card { background: #1f2933; padding: 20px; border-radius: 8px; margin: 10px; display: inline-block; width: 300px; border-bottom: 4px solid #ff4655; }
+        button { background: #ff4655; color: white; border: none; padding: 10px 15px; cursor: pointer; margin: 5px; font-weight: bold; }
+        input { background: #0f1923; color: white; border: 1px solid #444; padding: 10px; width: 80%; margin-bottom: 15px; }
+        .map-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 650px; margin: 20px auto; }
+        .map-item { background: #2f3944; padding: 10px; border: 1px solid #444; cursor: pointer; }
+        .banned { opacity: 0.3; border-color: red; color: red; }
+        .picked { border-color: #00ff00; color: #00ff00; }
     </style>
 </head>
 <body>
-    <h1>MATCH ADMIN</h1>
-    <div class="control-box">
-        <input type="text" id="tAn" placeholder="Team A Name">
-        <br>
-        <button onclick="changeScore('teamA_score', 1)">T-A +1</button>
-        <button onclick="changeScore('teamA_score', -1)">T-A -1</button>
+    <h1>VALORANT ESPORTS ADMIN</h1>
+    <div class="card">
+        <input type="text" id="nameA" placeholder="Team A Name">
+        <h2 id="sA">0</h2>
+        <button onclick="update('teamA_score', 1)">+1</button>
+        <button onclick="update('teamA_score', -1)">-1</button>
     </div>
-    <div class="control-box">
-        <input type="text" id="tBn" placeholder="Team B Name">
-        <br>
-        <button onclick="changeScore('teamB_score', 1)">T-B +1</button>
-        <button onclick="changeScore('teamB_score', -1)">T-B -1</button>
+    <div class="card">
+        <input type="text" id="nameB" placeholder="Team B Name">
+        <h2 id="sB">0</h2>
+        <button onclick="update('teamB_score', 1)">+1</button>
+        <button onclick="update('teamB_score', -1)">-1</button>
     </div>
-    <button onclick="updateNames()" style="background:#00c853">UPDATE NAMES</button>
+    <br>
+    <button onclick="saveNames()" style="background:#00c853">UPDATE NAMES</button>
 
-    <script src="config.js"></script>
+    <h3>MAP VETO</h3>
+    <div class="map-grid" id="mapGrid"></div>
+
     <script>
-        const db = firebase.database().ref('matchData');
-        let currentData = {};
+        const maps = ["Ascent", "Bind", "Breeze", "Haven", "Icebox", "Lotus", "Split", "Sunset", "Abyss"];
+        let data = {};
 
-        db.on('value', (snap) => { currentData = snap.val() || {teamA_score:0, teamB_score:0}; });
-
-        function changeScore(team, val) {
-            let newScore = (currentData[team] || 0) + val;
-            db.update({ [team]: newScore < 0 ? 0 : newScore });
+        async function refresh() {
+            const res = await fetch('/api/match');
+            data = await res.json();
+            document.getElementById('sA').innerText = data.teamA_score || 0;
+            document.getElementById('sB').innerText = data.teamB_score || 0;
+            document.getElementById('nameA').value = data.teamA_name || "TEAM A";
+            document.getElementById('nameB').value = data.teamB_name || "TEAM B";
+            renderMaps();
         }
 
-        function updateNames() {
-            db.update({
-                teamA_name: document.getElementById('tAn').value || "TEAM A",
-                teamB_name: document.getElementById('tBn').value || "TEAM B"
+        async function update(field, val) {
+            let newVal = (data[field] || 0) + val;
+            await fetch('/api/match', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ [field]: newVal < 0 ? 0 : newVal }) });
+            refresh();
+        }
+
+        async function saveNames() {
+            await fetch('/api/match', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ teamA_name: document.getElementById('nameA').value, teamB_name: document.getElementById('nameB').value }) });
+            alert("Updated!");
+        }
+
+        function renderMaps() {
+            const grid = document.getElementById('mapGrid');
+            grid.innerHTML = '';
+            maps.forEach(m => {
+                const div = document.createElement('div');
+                div.className = 'map-item';
+                div.innerText = m;
+                grid.appendChild(div);
             });
         }
+        refresh();
     </script>
 </body>
 </html>
