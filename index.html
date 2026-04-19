@@ -3,106 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <style>
-        body { margin: 0; overflow: hidden; font-family: 'DIN Next', sans-serif; background: transparent; color: white; text-transform: uppercase; }
+        body { margin: 0; background: transparent; color: white; font-family: 'Segoe UI', sans-serif; text-transform: uppercase; overflow: hidden; }
         
-        /* Top Scoreboard VCT Style */
-        .vct-header { position: absolute; top: 0; left: 50%; transform: translateX(-50%); display: flex; align-items: center; background: rgba(15, 25, 35, 0.95); padding: 10px 60px; border-bottom: 4px solid #ff4655; clip-path: polygon(0 0, 100% 0, 95% 100%, 5% 100%); min-width: 600px; justify-content: space-between; }
-        .team-name { font-size: 24px; font-weight: 800; letter-spacing: 2px; width: 200px; }
-        .score-box { background: #ff4655; font-size: 48px; font-weight: 900; padding: 5px 25px; margin: 0 20px; box-shadow: 0 0 15px rgba(255, 70, 85, 0.5); }
-        .round-info { text-align: center; font-size: 14px; opacity: 0.7; }
-
-        /* Side Panels for Players */
-        .side-panel { position: absolute; bottom: 50px; width: 350px; display: flex; flex-direction: column; gap: 8px; }
-        .left-side { left: 30px; }
-        .right-side { right: 30px; }
-
-        .player-row { position: relative; height: 50px; background: rgba(15, 25, 35, 0.8); display: flex; align-items: center; border-left: 5px solid #00adff; overflow: hidden; }
-        .right-side .player-row { border-left: none; border-right: 5px solid #ff4655; flex-direction: row-reverse; }
+        /* Professional VCT Top Bar */
+        .vct-container { position: absolute; top: 0; left: 50%; transform: translateX(-50%); display: flex; align-items: center; background: rgba(15, 25, 35, 0.95); border-bottom: 3px solid #ff4655; padding: 10px 50px; clip-path: polygon(0 0, 100% 0, 95% 100%, 5% 100%); min-width: 650px; justify-content: space-between; }
         
-        .hp-bg { position: absolute; top: 0; left: 0; height: 100%; background: rgba(255, 70, 85, 0.3); z-index: 1; transition: width 0.4s ease; }
-        .right-side .hp-bg { left: auto; right: 0; }
+        .team-name { font-size: 26px; font-weight: 800; width: 220px; letter-spacing: 1px; }
+        .score-box { background: #ff4655; font-size: 45px; font-weight: 900; padding: 0 25px; margin: 0 15px; min-width: 60px; text-align: center; box-shadow: 0 0 15px rgba(255, 70, 85, 0.4); }
+        .match-info { text-align: center; font-size: 14px; opacity: 0.8; line-height: 1.2; }
 
-        .player-info { position: relative; z-index: 2; display: flex; width: 100%; padding: 0 15px; align-items: center; justify-content: space-between; }
-        .p-name { font-weight: bold; font-size: 18px; }
-        .p-hp-text { font-size: 14px; font-weight: bold; }
-
-        /* Map Veto Strip */
-        .map-veto { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; }
-        .map-tag { background: #4CAF50; padding: 5px 15px; font-size: 12px; font-weight: bold; border-radius: 3px; }
+        /* Players Side Panels (VCT Style) */
+        .players-panel { position: absolute; bottom: 80px; width: 320px; }
+        .left-panel { left: 40px; }
+        .right-panel { right: 40px; }
+        .p-row { background: rgba(20, 20, 20, 0.8); margin: 6px 0; height: 45px; display: flex; align-items: center; border-left: 5px solid #00adff; position: relative; overflow: hidden; }
+        .right-panel .p-row { border-left: none; border-right: 5px solid #ff4655; flex-direction: row-reverse; }
+        .hp-bar { position: absolute; top: 0; left: 0; height: 100%; background: rgba(0, 173, 255, 0.2); transition: width 0.5s ease; z-index: 1; }
     </style>
 </head>
 <body>
-    <div class="vct-header">
-        <div class="team-name" style="text-align: right;" id="nameA">TEAM OWL</div>
+    <div class="vct-container">
+        <div class="team-name" style="text-align: right;" id="tA_name">TEAM A</div>
         <div style="display: flex; align-items: center;">
-            <div class="score-box" id="scoreA">0</div>
-            <div class="round-info">ROUND <br><span id="roundNum" style="font-size: 24px; color: white;">1</span></div>
-            <div class="score-box" id="scoreB">0</div>
+            <div class="score-box" id="tA_score">0</div>
+            <div class="match-info">ROUND<br><span id="round" style="font-size: 22px; font-weight: bold;">1</span></div>
+            <div class="score-box" id="tB_score">0</div>
         </div>
-        <div class="team-name" id="nameB">TRIANGLES</div>
+        <div class="team-name" id="tB_name">TEAM B</div>
     </div>
 
-    <div class="side-panel left-side" id="playersA"></div>
-    <div class="side-panel right-side" id="playersB"></div>
-
-    <div class="map-veto" id="vetoList"></div>
+    <div class="players-panel left-panel" id="playersA"></div>
+    <div class="players-panel right-panel" id="playersB"></div>
 
     <script>
-        async function updateHUD() {
+        async function fetchMatchData() {
             try {
-                const res = await fetch('/api/match');
-                const data = await res.json();
-                if(!data.teamA) return;
+                const response = await fetch('/api/match');
+                const data = await response.json();
+                
+                if (data.teamA) {
+                    // Update Names & Scores
+                    document.getElementById('tA_name').innerText = data.teamA.name;
+                    document.getElementById('tB_name').innerText = data.teamB.name;
+                    document.getElementById('tA_score').innerText = data.teamA.score;
+                    document.getElementById('tB_score').innerText = data.teamB.score;
+                    document.getElementById('round').innerText = data.current_round || "1";
 
-                // Update Header
-                document.getElementById('nameA').innerText = data.teamA.name;
-                document.getElementById('nameB').innerText = data.teamB.name;
-                document.getElementById('scoreA').innerText = data.teamA.score;
-                document.getElementById('scoreB').innerText = data.teamB.score;
-                document.getElementById('roundNum').innerText = data.current_round || 1;
-
-                // Render Players A (Blue Side)
-                let htmlA = '';
-                data.teamA.players.forEach(p => {
-                    htmlA += `
-                        <div class="player-row">
-                            <div class="hp-bg" style="width: ${p.hp}%"></div>
-                            <div class="player-info">
-                                <span class="p-name">${p.name}</span>
-                                <span class="p-hp-text">${p.hp} HP</span>
-                            </div>
-                        </div>`;
-                });
-                document.getElementById('playersA').innerHTML = htmlA;
-
-                // Render Players B (Red Side)
-                let htmlB = '';
-                data.teamB.players.forEach(p => {
-                    htmlB += `
-                        <div class="player-row">
-                            <div class="hp-bg" style="width: ${p.hp}%; background: rgba(0, 173, 255, 0.3);"></div>
-                            <div class="player-info">
-                                <span class="p-hp-text">${p.hp} HP</span>
-                                <span class="p-name">${p.name}</span>
-                            </div>
-                        </div>`;
-                });
-                document.getElementById('playersB').innerHTML = htmlB;
-
-                // Render Map Veto
-                let mapHtml = '';
-                if(data.maps) {
-                    data.maps.forEach(m => {
-                        mapHtml += `<div class="map-tag">${m}</div>`;
-                    });
+                    // Update Players HUD (Health Bars)
+                    renderPlayers(data.teamA.players, 'playersA', true);
+                    renderPlayers(data.teamB.players, 'playersB', false);
                 }
-                document.getElementById('vetoList').innerHTML = mapHtml;
-
-            } catch (e) { console.log("Waiting for data..."); }
+            } catch (err) { console.error("Sync Error:", err); }
         }
 
-        setInterval(updateHUD, 1000); // Har 1 second baad data refresh hoga
-        updateHUD();
+        function renderPlayers(players, containerId, isLeft) {
+            let html = '';
+            players.forEach(p => {
+                html += `<div class="p-row">
+                    <div class="hp-bar" style="width: ${p.hp}%"></div>
+                    <div style="position:relative; z-index:2; padding: 0 15px; width:100%; display:flex; justify-content:space-between;">
+                        <span>${p.name}</span> <span style="font-size:12px;">${p.hp} HP</span>
+                    </div>
+                </div>`;
+            });
+            document.getElementById(containerId).innerHTML = html;
+        }
+
+        setInterval(fetchMatchData, 1000); // Har 1 second baad sync karega
+        fetchMatchData();
     </script>
 </body>
 </html>
