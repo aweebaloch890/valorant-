@@ -1,41 +1,41 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Valorant HUD - Live</title>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; overflow: hidden; color: white; }
-        .hud-container { display: flex; justify-content: center; align-items: flex-start; width: 100vw; height: 100vh; padding-top: 20px; }
-        .scoreboard { background: rgba(0,0,0,0.8); display: flex; align-items: center; border: 2px solid #ff4655; border-radius: 5px; overflow: hidden; }
-        .team { padding: 10px 30px; font-size: 24px; font-weight: bold; text-transform: uppercase; }
-        .score { background: #ff4655; padding: 10px 25px; font-size: 32px; font-weight: 900; min-width: 40px; text-align: center; }
-        .timer { padding: 10px 20px; font-family: monospace; font-size: 24px; }
+        body { margin: 0; padding: 0; display: flex; justify-content: center; font-family: 'Arial Black', sans-serif; color: white; }
+        .scoreboard {
+            background: rgba(15, 25, 35, 0.9);
+            border-bottom: 4px solid #ff4655;
+            display: flex; align-items: center; padding: 10px 50px;
+            clip-path: polygon(5% 0%, 95% 0%, 100% 100%, 0% 100%);
+            margin-top: 20px;
+        }
+        .team { font-size: 28px; width: 250px; text-align: center; text-transform: uppercase; }
+        .score { font-size: 45px; background: #ff4655; padding: 0 25px; margin: 0 20px; font-weight: 900; min-width: 60px; text-align: center; }
     </style>
 </head>
 <body>
-    <div class="hud-container">
-        <div class="scoreboard">
-            <div id="teamA_name" class="team">TEAM A</div>
-            <div id="teamA_score" class="score">0</div>
-            <div class="timer">0:00</div>
-            <div id="teamB_score" class="score">0</div>
-            <div id="teamB_name" class="team">TEAM B</div>
-        </div>
+    <div class="scoreboard">
+        <div id="tAn" class="team">TEAM A</div>
+        <div id="tAs" class="score">0</div>
+        <div style="opacity:0.5">VS</div>
+        <div id="tBs" class="score">0</div>
+        <div id="tBn" class="team">TEAM B</div>
     </div>
 
-    <script src="config.js"></script>
     <script>
-        const db = firebase.database().ref('matchData');
-        db.on('value', (snapshot) => {
-            const data = snapshot.val();
-            if(data) {
-                document.getElementById('teamA_name').innerText = data.teamA_name;
-                document.getElementById('teamB_name').innerText = data.teamB_name;
-                document.getElementById('teamA_score').innerText = data.teamA_score;
-                document.getElementById('teamB_score').innerText = data.teamB_score;
-            }
-        });
+        async function sync() {
+            try {
+                const r = await fetch('/api/match');
+                const d = await r.json();
+                document.getElementById('tAn').innerText = d.teamA_name;
+                document.getElementById('tBn').innerText = d.teamB_name;
+                document.getElementById('tAs').innerText = d.teamA_score;
+                document.getElementById('tBs').innerText = d.teamB_score;
+            } catch(e) {}
+        }
+        setInterval(sync, 2000);
+        sync();
     </script>
 </body>
 </html>
