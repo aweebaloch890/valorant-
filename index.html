@@ -1,41 +1,51 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <style>
-        body { margin: 0; padding: 0; display: flex; justify-content: center; font-family: 'Arial Black', sans-serif; color: white; }
-        .scoreboard {
-            background: rgba(15, 25, 35, 0.9);
-            border-bottom: 4px solid #ff4655;
-            display: flex; align-items: center; padding: 10px 50px;
-            clip-path: polygon(5% 0%, 95% 0%, 100% 100%, 0% 100%);
-            margin-top: 20px;
-        }
-        .team { font-size: 28px; width: 250px; text-align: center; text-transform: uppercase; }
-        .score { font-size: 45px; background: #ff4655; padding: 0 25px; margin: 0 20px; font-weight: 900; min-width: 60px; text-align: center; }
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; color: white; background: transparent; }
+        .vct-top-bar { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; background: rgba(15, 25, 35, 0.9); border-bottom: 3px solid #ff4655; padding: 5px 40px; clip-path: polygon(5% 0, 95% 0, 100% 100%, 0 100%); }
+        .score { font-size: 40px; font-weight: bold; margin: 0 20px; min-width: 50px; text-align: center; background: #ff4655; }
+        
+        /* Side Player Panels */
+        .side-panel { position: absolute; bottom: 100px; width: 300px; }
+        .left-side { left: 20px; }
+        .right-side { right: 20px; }
+        .player-row { display: flex; align-items: center; background: rgba(0,0,0,0.7); margin: 5px 0; height: 40px; border-left: 4px solid #00adff; }
+        .hp-bar { height: 100%; background: #ff4655; transition: width 0.3s; }
+        .player-name { padding-left: 10px; flex-grow: 1; font-size: 14px; text-transform: uppercase; }
     </style>
 </head>
 <body>
-    <div class="scoreboard">
-        <div id="tAn" class="team">TEAM A</div>
-        <div id="tAs" class="score">0</div>
-        <div style="opacity:0.5">VS</div>
-        <div id="tBs" class="score">0</div>
-        <div id="tBn" class="team">TEAM B</div>
+    <div class="vct-top-bar">
+        <div id="teamA_name">TEAM OWL</div>
+        <div class="score" id="scoreA">0</div>
+        <div style="font-size: 12px; opacity: 0.6;">ROUND 1</div>
+        <div class="score" id="scoreB">0</div>
+        <div id="teamB_name">TRIANGLES</div>
     </div>
 
+    <div class="side-panel left-side" id="playersA"></div>
+    <div class="side-panel right-side" id="playersB"></div>
+
     <script>
-        async function sync() {
-            try {
-                const r = await fetch('/api/match');
-                const d = await r.json();
-                document.getElementById('tAn').innerText = d.teamA_name;
-                document.getElementById('tBn').innerText = d.teamB_name;
-                document.getElementById('tAs').innerText = d.teamA_score;
-                document.getElementById('tBs').innerText = d.teamB_score;
-            } catch(e) {}
+        async function updateHUD() {
+            const res = await fetch('/api/match');
+            const data = await res.json();
+            if(!data.teamA) return;
+
+            document.getElementById('scoreA').innerText = data.teamA.score;
+            document.getElementById('scoreB').innerText = data.teamB.score;
+            document.getElementById('teamA_name').innerText = data.teamA.name;
+            document.getElementById('teamB_name').innerText = data.teamB.name;
+
+            // Render Players A
+            let htmlA = '';
+            data.teamA.players.forEach(p => {
+                htmlA += `<div class="player-row"><div class="hp-bar" style="width:${p.hp}%"></div><div class="player-name">${p.name}</div></div>`;
+            });
+            document.getElementById('playersA').innerHTML = htmlA;
         }
-        setInterval(sync, 2000);
-        sync();
+        setInterval(updateHUD, 1000);
     </script>
 </body>
 </html>
