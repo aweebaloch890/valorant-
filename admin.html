@@ -2,21 +2,35 @@
 <html>
 <head>
     <style>
-        body { background: #0f1923; color: white; padding: 20px; }
-        .card { background: #1f2326; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
-        input { background: #333; color: white; border: 1px solid #ff4655; padding: 5px; }
-        button { background: #ff4655; color: white; border: none; padding: 8px 15px; cursor: pointer; }
-        .map-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-        .map-box { padding: 10px; border: 1px solid #444; text-align: center; cursor: pointer; }
-        .picked { background: green; }
+        body { background: #0f1923; color: white; font-family: sans-serif; padding: 20px; }
+        .card { background: #1f2326; padding: 20px; margin-bottom: 20px; border-radius: 8px; border-left: 5px solid #ff4655; }
+        .player-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
+        .player-control { background: #2a2e33; padding: 10px; border-radius: 5px; }
+        input { background: #333; color: white; border: 1px solid #444; padding: 5px; width: 80px; }
+        .map-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        .map-box { padding: 10px 20px; border: 1px solid #444; cursor: pointer; background: #2a2e33; transition: 0.3s; }
+        .picked { background: #4CAF50; border-color: #fff; }
+        button { background: #ff4655; color: white; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
+        .push-btn { width: 100%; height: 60px; font-size: 20px; margin-top: 20px; background: #ff4655; }
     </style>
 </head>
 <body>
-    <h1>VCT ADMIN PANEL</h1>
+    <h1>VCT PRO ADMIN PANEL</h1>
     
     <div class="card">
-        <h3>TEAM A: <input id="tAn" value="TEAM A"> Score: <button onclick="changeScore('A', 1)">+1</button></h3>
-        <div id="pListA"></div>
+        <h3>TEAM A: <input id="tAn" value="TEAM OWL" style="width:200px;"> | Score: <span id="sA_val">0</span> 
+            <button onclick="changeScore('A', 1)">+1</button> <button onclick="changeScore('A', -1)">-1</button>
+        </h3>
+        <div class="player-grid" id="pListA">
+            </div>
+    </div>
+
+    <div class="card" style="border-left-color: #00adff;">
+        <h3>TEAM B: <input id="tBn" value="TRIANGLES" style="width:200px;"> | Score: <span id="sB_val">0</span> 
+            <button onclick="changeScore('B', 1)">+1</button> <button onclick="changeScore('B', -1)">-1</button>
+        </h3>
+        <div class="player-grid" id="pListB">
+            </div>
     </div>
 
     <div class="card">
@@ -24,41 +38,82 @@
         <div class="map-grid" id="mapGrid"></div>
     </div>
 
-    <button style="width:100%; height:50px; font-weight:bold;" onclick="saveAll()">PUSH LIVE UPDATE</button>
+    <button class="push-btn" onclick="saveAll()">PUSH LIVE UPDATE</button>
 
     <script>
         let matchData = {
-            teamA: { name: "TEAM A", score: 0, players: [{name: "Player 1", hp: 100}, {name: "Player 2", hp: 100}] },
-            teamB: { name: "TEAM B", score: 0, players: [{name: "Player 6", hp: 100}] },
+            teamA: { name: "TEAM OWL", score: 0, players: [] },
+            teamB: { name: "TRIANGLES", score: 0, players: [] },
             maps: [],
             current_round: 1
         };
 
-        const mapsList = ["Ascent", "Bind", "Haven", "Split", "Icebox", "Lotus", "Sunset"];
+        // Initialize 5 players for each team
+        for(let i=1; i<=5; i++) {
+            matchData.teamA.players.push({ name: "Player "+i, hp: 100 });
+            matchData.teamB.players.push({ name: "Player "+(i+5), hp: 100 });
+        }
 
-        function init() {
+        function renderPlayers() {
+            const listA = document.getElementById('pListA');
+            const listB = document.getElementById('pListB');
+            listA.innerHTML = ''; listB.innerHTML = '';
+
+            matchData.teamA.players.forEach((p, index) => {
+                listA.innerHTML += `<div class="player-control">
+                    Name: <input value="${p.name}" onchange="matchData.teamA.players[${index}].name=this.value"> 
+                    HP: <input type="number" value="${p.hp}" onchange="matchData.teamA.players[${index}].hp=this.value">
+                </div>`;
+            });
+
+            matchData.teamB.players.forEach((p, index) => {
+                listB.innerHTML += `<div class="player-control">
+                    Name: <input value="${p.name}" onchange="matchData.teamB.players[${index}].name=this.value"> 
+                    HP: <input type="number" value="${p.hp}" onchange="matchData.teamB.players[${index}].hp=this.value">
+                </div>`;
+            });
+        }
+
+        const mapsList = ["Ascent", "Bind", "Haven", "Split", "Icebox", "Lotus", "Sunset"];
+        function initMaps() {
             let grid = document.getElementById('mapGrid');
             mapsList.forEach(m => {
-                grid.innerHTML += `<div class="map-box" onclick="this.classList.toggle('picked')">${m}</div>`;
+                grid.innerHTML += `<div class="map-box" onclick="toggleMap(this, '${m}')">${m}</div>`;
             });
+        }
+
+        function toggleMap(el, mapName) {
+            el.classList.toggle('picked');
+            if(el.classList.contains('picked')) matchData.maps.push(mapName);
+            else matchData.maps = matchData.maps.filter(m => m !== mapName);
+        }
+
+        function changeScore(team, val) {
+            if(team === 'A') {
+                matchData.teamA.score += val;
+                document.getElementById('sA_val').innerText = matchData.teamA.score;
+            } else {
+                matchData.teamB.score += val;
+                document.getElementById('sB_val').innerText = matchData.teamB.score;
+            }
         }
 
         async function saveAll() {
             matchData.teamA.name = document.getElementById('tAn').value;
-            await fetch('/api/match', {
+            matchData.teamB.name = document.getElementById('tBn').value;
+            
+            const response = await fetch('/api/match', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(matchData)
             });
-            alert("Live!");
+            
+            if(response.ok) alert("Data Pushed to MySQL Successfully!");
+            else alert("Error pushing data.");
         }
 
-        function changeScore(team, val) {
-            if(team === 'A') matchData.teamA.score += val;
-            saveAll();
-        }
-
-        init();
+        renderPlayers();
+        initMaps();
     </script>
 </body>
 </html>
