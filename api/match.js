@@ -1,42 +1,46 @@
-const { MongoClient, ServerApiVersion } = require('mongodb');
-
-// Connection String with your password
-const uri = "mongodb+srv://aweerind890:aweerind1122@cluster0.3hgittm.mongodb.net/?appName=Cluster0";
-
-const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  }
-});
+const mysql = require('mysql2/promise');
 
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-    if (req.method === 'OPTIONS') return res.status(200).end();
+    const dbConfig = {
+        host: '167.86.79.221',
+        user: 'u307_TuUviZ5pEf',
+        password: 'YPt9YCopTPFjtie6rQ!QTM7+',
+        database: 's307_valorant',
+        port: 3306
+    };
 
     try {
-        await client.connect();
-        const db = client.db("valorant_esports");
-        const collection = db.collection("live_data");
+        const connection = await mysql.createConnection(dbConfig);
+        
+        // Initial Table Setup with Player Data JSON
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS vct_match (
+                id VARCHAR(50) PRIMARY KEY,
+                teamA JSON,
+                teamB JSON,
+                maps JSON,
+                current_round INT,
+                timer VARCHAR(10)
+            )
+        `);
 
         if (req.method === 'GET') {
-            const data = await collection.findOne({ id: "current_match" });
-            return res.status(200).json(data || { teamA_score: 0, teamB_score: 0, teamA_name: "TEAM A", teamB_name: "TEAM B", veto: [] });
+            const [rows] = await connection.execute('SELECT * FROM vct_match WHERE id = "live"');
+            return res.status(200).json(rows[0] || {});
         }
 
         if (req.method === 'POST') {
-            await collection.updateOne(
-                { id: "current_match" },
-                { $set: req.body },
-                { upsert: true }
-            );
-            return res.status(200).json({ status: "Success" });
+            await connection.execute(`
+                INSERT INTO vct_match (id, teamA, teamB, maps, current_round, timer)
+                VALUES ("live", ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE 
+                teamA = VALUES(teamA), teamB = VALUES(teamB), maps = VALUES(maps), 
+                current_round = VALUES(current_round), timer = VALUES(timer)
+            `, [JSON.stringify(req.body.teamA), JSON.stringify(req.body.teamB), JSON.stringify(req.body.maps), req.body.current_round, req.body.timer]);
+            
+            return res.status(200).json({ success: true });
         }
-    } catch (error) {
-        return res.status(500).json({ error: error.message });
-    }
+        await connection.end();
+    } catch (e) { res.status(500).json({ error: e.message }); }
 }
